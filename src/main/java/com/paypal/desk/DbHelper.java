@@ -25,24 +25,16 @@ public class DbHelper {
     }
 
     static int createUser(String firstName, String lastName) {
-        String sqlInsert = "insert into users " +
-                "(first_name, last_name)" +
-                " values (" +
-                "'" + firstName + "'" +
-                ", " +
-                "'" + lastName + "'" +
-                ")";
-
+        String sqlInsert = "insert into users (first_name, last_name) values(?,?)";
         try {
-            Statement statement = connection.createStatement();
-            statement.execute(sqlInsert);
-
+            PreparedStatement preparedStatement = connection.prepareStatement(sqlInsert);
+            preparedStatement.setString(1, firstName);
+            preparedStatement.setString(2, lastName);
+            preparedStatement.execute();
             String idSql = "select max(id) from users";
             Statement idStatement = connection.createStatement();
             ResultSet resultSet = idStatement.executeQuery(idSql);
-
             resultSet.next();
-
             return resultSet.getInt(1);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -51,13 +43,12 @@ public class DbHelper {
     }
 
     static void cashFlow(int userId, double amount) {
-        String sql = "update users set balance = balance+" +
-                amount +
-                "where id = " +
-                userId;
+        String sqlUpdate = "update users set balance = balance + ? where id = ?";
         try {
-            Statement idStatement = connection.createStatement();
-            int countUpdated = idStatement.executeUpdate(sql);
+            PreparedStatement preparedStatement = connection.prepareStatement(sqlUpdate);
+            preparedStatement.setDouble(1, amount);
+            preparedStatement.setInt(2, userId);
+            int countUpdated = preparedStatement.executeUpdate();
             System.out.println(countUpdated + " records affected.");
         } catch (SQLException e) {
             e.printStackTrace();
@@ -65,26 +56,19 @@ public class DbHelper {
     }
 
     static int transaction(int userFrom, int userTo, double amount) {
-        String sqlInsert = "insert into transactions " +
-                "(user_from,  user_to, transaction_amount)" +
-                " values (" +
-                "'" + userFrom + "'" +
-                ", " +
-                "'" + userTo + "'" +
-                ", " +
-                "'" + amount + "'" +
-                ")";
 
+        String sqlInsert = "insert into users (user_from,  user_to, transaction_amount) values(?,?,?)";
         try {
-            Statement statement = connection.createStatement();
-            statement.execute(sqlInsert);
+            PreparedStatement preparedStatement = connection.prepareStatement(sqlInsert);
+            preparedStatement.setInt(1, userFrom);
+            preparedStatement.setInt(2, userTo);
+            preparedStatement.setDouble(3, amount);
             cashFlow(userFrom, -amount);
             cashFlow(userTo, amount);
             String idSql = "select max(id) from users";
             Statement idStatement = connection.createStatement();
             ResultSet resultSet = idStatement.executeQuery(idSql);
             resultSet.next();
-
             return resultSet.getInt(1);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -95,7 +79,6 @@ public class DbHelper {
 
     static List<User> listUsers() {
         String sql = "select * from users";
-
         try {
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
